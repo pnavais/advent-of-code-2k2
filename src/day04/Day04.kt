@@ -2,7 +2,6 @@ package day04
 
 import readInput
 
-
 private fun overlapsTotally(
     firstRangeDef: LongRange,
     secondStart: Long,

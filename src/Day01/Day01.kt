@@ -1,3 +1,7 @@
+package day01
+
+import readInput
+
 fun part1(input: List<String>): Pair<Long, Long> {
 
     var maxElf = 1L
