@@ -6,14 +6,10 @@ private const val TOTAL_DISK_SIZE: Long = 70000000
 private const val REQUIRED_UNUSED_SPACE: Long = 30000000
 private const val MAX_SIZE_LIMIT: Int = 100000
 
-class File(name: String, size: Long) {
-    val name = name
-    val size = size
+class File(val name: String, val size: Long) {
 }
 
-class Directory(name: String, parent: Directory?) {
-    val name = name
-    val parent = parent
+class Directory(val name: String, val parent: Directory?) {
     val subDirectories = mutableMapOf<String, Directory>()
     val files = mutableListOf<File>()
 
