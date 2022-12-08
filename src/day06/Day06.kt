@@ -2,7 +2,7 @@ package day06
 
 import readInput
 
-fun part1(input: List<String>): List<Pair<String, Long>> {
+private fun readPackets(input: List<String>, maxLength: Int): List<Pair<String, Long>> {
     return input.map { s ->
         var idx = 0L
         val charSet = HashSet<Char>()
@@ -16,7 +16,7 @@ fun part1(input: List<String>): List<Pair<String, Long>> {
             }
             packetMarker.add(c)
             charSet.add(c)
-            if (packetMarker.size == 4) {
+            if (packetMarker.size == maxLength) {
                 break
             }
         }
@@ -24,8 +24,12 @@ fun part1(input: List<String>): List<Pair<String, Long>> {
     }.toList()
 }
 
-fun part2(input: List<String>): Long {
-    return 0L
+fun part1(input: List<String>): List<Pair<String, Long>> {
+    return readPackets(input, 4)
+}
+
+fun part2(input: List<String>): List<Pair<String, Long>>  {
+    return readPackets(input, 14)
 }
 
 fun main() {
