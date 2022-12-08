@@ -2,6 +2,8 @@ package day07
 
 import readInput
 
+private const val TOTAL_DISK_SIZE: Long = 70000000
+private const val REQUIRED_UNUSED_SPACE: Long = 30000000
 private const val MAX_SIZE_LIMIT: Int = 100000
 
 class File(name: String, size: Long) {
@@ -79,7 +81,11 @@ fun part1(input: List<String>): Long  {
 }
 
 fun part2(input: List<String>): Long  {
-    return 0L
+    val dirTree = buildTree(input)
+    val neededSpace = REQUIRED_UNUSED_SPACE - (TOTAL_DISK_SIZE - dirTree.root.computeSize())
+    return dirTree.getAllDirs().map { d -> d.computeSize() }.filter { s ->
+        s >= neededSpace
+    }.minOf { it }
 }
 
 fun main() {
