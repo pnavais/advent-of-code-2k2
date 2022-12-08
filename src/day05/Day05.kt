@@ -1,18 +1,64 @@
 package day05
 
 import readInput
+import java.util.*
 import kotlin.collections.ArrayDeque
 
 val pattern = Regex("^move (\\d+) from (\\d+) to (\\d+)$")
 
-fun part1(input: List<String>): String {
+interface CrateMover {
+    fun moveCrates(line: String, stacks: MutableList<ArrayDeque<Char>>)
+}
+
+private class CrateMover9000 : CrateMover {
+    override fun moveCrates(line: String, stacks: MutableList<ArrayDeque<Char>>) {
+        val triple = parseMove(line)
+        var numMoves = triple.first
+        val srcStack = stacks[triple.second!! - 1]
+        val targetStack = stacks[triple.third!! - 1]
+
+        while (numMoves!! > 0) {
+            val elem = srcStack.removeFirst()
+            targetStack.addFirst(elem)
+            numMoves--
+        }
+    }
+}
+
+private class CrateMover9001 : CrateMover {
+    override fun moveCrates(line: String, stacks: MutableList<ArrayDeque<Char>>) {
+        val triple = parseMove(line)
+        var numMoves = triple.first
+        val srcStack = stacks[triple.second!! - 1]
+        val targetStack = stacks[triple.third!! - 1]
+
+        val tempStack = Stack<Char>()
+        while (numMoves!! > 0) {
+            val elem = srcStack.removeFirst()
+            tempStack.push(elem)
+            numMoves--
+        }
+        while (!tempStack.isEmpty()) {
+            targetStack.addFirst(tempStack.pop())
+        }
+    }
+}
+
+private fun parseMove(line: String): Triple<Int?, Int?, Int?> {
+    val m = pattern.find(line)
+    return Triple(m?.groups?.get(1)?.value?.toInt(),
+        m?.groups?.get(2)?.value?.toInt(),
+        m?.groups?.get(3)?.value?.toInt())
+}
+
+fun rearrangeCrates(input: List<String>, crateMover: CrateMover): String {
     val stacks = mutableListOf<ArrayDeque<Char>>()
 
     for (line in input) {
         if (!line.startsWith("move")) {
             createStack(line, stacks)
         } else {
-            makeMove(line, stacks)
+            crateMover.moveCrates(line, stacks)
         }
     }
 
@@ -48,24 +94,12 @@ private fun createStack(line: String, stacks: MutableList<ArrayDeque<Char>>) {
     }
 }
 
-private fun makeMove(line: String, stacks: MutableList<ArrayDeque<Char>>) {
-    val m = pattern.find(line)
-    var numMoves = m?.groups?.get(1)?.value?.toInt()
-    val srcStackIdx = m?.groups?.get(2)?.value?.toInt()
-    val targetStackIdx = m?.groups?.get(3)?.value?.toInt()
-
-    while (numMoves!! > 0) {
-        val srcStack = stacks[srcStackIdx!! - 1]
-        val targetStack = stacks[targetStackIdx!! - 1]
-        val elem = srcStack.removeFirst()
-        targetStack.addFirst(elem)
-        numMoves--
-    }
-
+fun part1(input: List<String>): String {
+    return rearrangeCrates(input, CrateMover9000())
 }
 
 fun part2(input: List<String>): String {
-    return ""
+    return rearrangeCrates(input, CrateMover9001())
 }
 
 fun main() {
