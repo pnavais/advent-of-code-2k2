@@ -42,71 +42,40 @@ fun computeVisibility(grid: Grid): Pair<Long, Long> {
 }
 
 private fun checkHigherLeft(x: Int, y: Int, grid: Grid): Boolean {
-    var visible = true
-    val height = grid[x][y].height
-    var rY = y - 1
-    var numTrees = 0L
-    while (rY >= 0) {
-        numTrees++
-        if (grid[x][rY].height >= height) {
-            visible = false
-            break
-        }
-        rY--
-    }
-    val currentScore = grid[x][y].scenicScore
-    grid[x][y].scenicScore = if (currentScore <=0 ) { numTrees } else { currentScore * numTrees }
-    return visible
+    return checkHigherMove(x, y, grid, { _, b -> 0 to b - 1 }, { _, rY, _ -> rY >= 0 }, {a, _, _, rB, g, h  -> g[a][rB].height >= h}, { _, rY -> 0 to rY - 1 })
 }
 
 private fun checkHigherRight(x: Int, y: Int, grid: Grid): Boolean {
-    var visible = true
-    val height = grid[x][y].height
-    var rY = y + 1
-    var numTrees = 0L
-    while (rY < grid[x].size) {
-        numTrees++
-        if (grid[x][rY].height >= height) {
-            visible = false
-            break
-        }
-        rY++
-    }
-    val currentScore = grid[x][y].scenicScore
-    grid[x][y].scenicScore = if (currentScore <=0 ) { numTrees } else { currentScore * numTrees }
-    return visible
+    return checkHigherMove(x, y, grid, { _, b -> 0 to b + 1 }, { _, rY, g -> rY < g[x].size }, {a, _, _, rB, g, h  -> g[a][rB].height >= h}, { _, rY -> 0 to rY + 1 })
 }
 
 private fun checkHigherUp(x: Int, y: Int, grid: Grid): Boolean {
-    var visible = true
-    val height = grid[x][y].height
-    var rX = x - 1
-    var numTrees = 0L
-    while (rX >= 0) {
-        numTrees++
-        if (grid[rX][y].height >= height) {
-            visible = false
-            break
-        }
-        rX--
-    }
-    val currentScore = grid[x][y].scenicScore
-    grid[x][y].scenicScore = if (currentScore <=0 ) { numTrees } else { currentScore * numTrees }
-    return visible
+    return checkHigherMove(x, y, grid, { a, _ -> a - 1 to 0 }, { rX, _, _ -> rX >= 0 }, { _, b, rA, _, g, h  -> g[rA][b].height >= h }, { rX, _ -> rX - 1 to 0 })
 }
 
 private fun checkHigherDown(x: Int, y: Int, grid: Grid): Boolean {
+    return checkHigherMove(x, y, grid, { a, _ -> a + 1 to 0 }, { rX, _, g -> rX < g.size }, { _, b, rA, _, g, h  -> g[rA][b].height >= h }, { rX, _ -> rX + 1 to 0})
+}
+
+private fun checkHigherMove(x: Int, y: Int, grid: Grid,
+                            initializer: (x: Int, y: Int) -> Pair<Int, Int>,
+                            checker: (rX: Int, rY: Int, grid: Grid) -> Boolean,
+                            visibleChecker: (x: Int, y: Int, rX: Int, rY: Int, grid: Grid, height: Short) -> Boolean,
+                            incrementer: (rX: Int, rY: Int) -> Pair<Int, Int>): Boolean {
     var visible = true
     val height = grid[x][y].height
-    var rX = x + 1
+    var (rX, rY) = initializer(x, y)
     var numTrees = 0L
-    while (rX < grid.size) {
+    while (checker(rX, rY, grid)) {
         numTrees++
-        if (grid[rX][y].height >= height) {
+        if (visibleChecker(x, y, rX, rY, grid, height)) {
             visible = false
             break
         }
-        rX++
+        incrementer(rX, rY).let {
+            rX = it.first
+            rY = it.second
+        }
     }
     val currentScore = grid[x][y].scenicScore
     grid[x][y].scenicScore = if (currentScore <=0 ) { numTrees } else { currentScore * numTrees }
