@@ -152,6 +152,6 @@ fun part2(input: List<String>): Long {
 fun main() {
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day09/Day09_test")
-    //println(part1(testInput))
+    println(part1(testInput))
     println(part2(testInput))
 }
