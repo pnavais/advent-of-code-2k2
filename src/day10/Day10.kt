@@ -1,34 +1,60 @@
 package day10
 
 import readInput
+import kotlin.text.StringBuilder
 
-class CycleRegister(private val frequency: Long = 20, private val step: Long = 40) {
+class CycleRegister(private val frequency: Int = 20, private val step: Int = 40) {
 
-    private var registerX: Long = 1
-    private val signalStrengths = mutableListOf<Long>()
-    private var cycleNum = 0L
+    private var registerX: Int = 1
+    private val signalStrengths = mutableListOf<Int>()
+    private var cycleNum = 0
+    private val rows = mutableListOf<String>()
+    private val currentRow = StringBuilder()
 
-    fun registerCycle(numCycles: Long, value: Long) {
+    fun registerCycle(numCycles: Int, value: Int) {
         for (i in 1 .. numCycles) {
             cycleNum++
-            keepSignal()
+            processSignal()
         }
         registerX+=value
     }
 
-    private fun keepSignal() {
+    fun getTotal(): Int {
+        return signalStrengths.sum()
+    }
+
+    fun draw(): String {
+        val builder = StringBuilder()
+        for (row in rows) {
+            builder.append(row)
+            builder.append("\n")
+        }
+        return builder.toString()
+    }
+
+    private fun processSignal() {
+        drawPixel()
         if ((cycleNum == frequency) || (cycleNum % step == frequency)) {
             signalStrengths.add(cycleNum * registerX)
         }
+        if (currentRow.length % step == 0) {
+            rows.add(currentRow.toString())
+            currentRow.clear()
+        }
     }
 
-    fun getTotal(): Long {
-        return signalStrengths.sum()
+    private fun drawPixel() {
+        // Check if sprite overlaps current pos (i.e. currentRow length)
+        var c = "."
+        if ((registerX-1..registerX+1).contains(currentRow.length)) {
+            c = "#"
+        }
+        currentRow.append(c)
     }
 
 }
 
-fun part1(input: List<String>): Long {
+private fun processInput(input: List<String>): CycleRegister {
     val cycleRegister = CycleRegister()
 
     for (inst in input) {
@@ -36,15 +62,20 @@ fun part1(input: List<String>): Long {
             cycleRegister.registerCycle(1, 0)
         } else {
             val (_, data) = inst.split(" ")
-            cycleRegister.registerCycle(2, data.toLong())
+            cycleRegister.registerCycle(2, data.toInt())
         }
     }
 
-    return cycleRegister.getTotal()
+    return cycleRegister
 }
 
-fun part2(input: List<String>): Long {
-    return 0L
+fun part1(input: List<String>): Int {
+    return processInput(input).getTotal()
+}
+
+fun part2(input: List<String>): String {
+    val cycleRegister = processInput(input)
+    return cycleRegister.draw()
 }
 
 fun main() {
