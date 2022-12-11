@@ -47,7 +47,8 @@ class Operation(private val first: Factor, private val operator: Operator, priva
 class Monkey(val id: Int,
              var items: Queue<Long> = LinkedList(),
              var operation: Operation? = null,
-             var tester: (new: Long) -> Int = { _ -> 0 }) {
+             var tester: (new: Long) -> Int = { _ -> 0 },
+             var reducer: (new: Long) -> Long = { n -> n }) {
     var visitor: ItemVisitor = MonkeyItemCounter()
 }
 
@@ -57,7 +58,7 @@ interface ItemVisitor {
 }
 
 class MonkeyItemCounter : ItemVisitor {
-    var counter: Long = 0L
+    private var counter: Long = 0L
     override fun visitItem(item: Long) {
         counter++
     }
@@ -69,9 +70,11 @@ class MonkeyItemCounter : ItemVisitor {
 
 class MonkeyGroup {
     private val monkeyList: MutableList<Monkey> = mutableListOf()
+    private var lcm: Long = 0L
 
     fun parseSpec(input: List<String>) {
         var monkey: Monkey? = null
+        val dividers = mutableListOf<Long>()
         var divider = 0L
         var monkeyTargetId = 0
         for (line in input) {
@@ -85,21 +88,24 @@ class MonkeyGroup {
                 monkey?.operation = Operation(Factor.from(first), Operator.from(op.first()), Factor.from(second))
             } else if ("^\\s*Test: divisible by".toRegex().containsMatchIn(line)) {
                 divider = Regex("divisible by (\\d+)").find(line)?.groupValues?.get(1)?.toLong()!!
+                dividers.add(divider)
             } else if ("^\\s*If (true|false):".toRegex().containsMatchIn(line)) {
                 monkeyTargetId = parseTester(line, monkeyTargetId, monkey, divider)
             }
         }
+
+        lcm = computeLcm(dividers)
     }
 
-    fun run(numRounds: Long, debug: Boolean = false) {
+    fun run(numRounds: Long, debug: Boolean = false, useReducer: Boolean = false, worryFunction: (n: Long) -> Long = { n -> n }) {
         for (i in 1..numRounds) {
             for (monkey in monkeyList) {
                 while (monkey.items.isNotEmpty()) {
                     monkey.visitor.visitItem(i)
-                    val newItem = monkey.operation
-                        ?.run(monkey.items.poll())?.toFloat()?.div(3.0f)
-                        ?.let { floor(it).toLong() }
+                    val original = monkey.items.poll()
+                    var newItem = monkey.operation?.run(original)?.let { worryFunction(it) }
                     val targetId = newItem?.let { monkey.tester(it) }
+                    newItem = if (useReducer) { newItem?.let { monkey.reducer(it) } } else { newItem }
                     monkeyList[targetId!!].items.add(newItem)
                 }
             }
@@ -107,13 +113,42 @@ class MonkeyGroup {
                 printStatus(i)
             }
         }
-        if (debug) {
+        //if (debug) {
             printVisitorStats()
-        }
+        //}
     }
 
     fun computeMonkeyBusiness(): Long {
         return monkeyList.map { monkey -> monkey.visitor.getData() }.sortedDescending().take(2).reduce { x, y -> x * y }
+    }
+
+    private fun parseTester(line: String, monkeyTargetId: Int, monkey: Monkey?, divider: Long): Int {
+        val monkeyId = Regex("throw to monkey (\\d+)").find(line)?.groupValues?.get(1)?.toInt()!!
+        if (line.contains("If false")) {
+            monkey?.tester = { n -> if (n % divider == 0L) { monkeyTargetId} else { monkeyId } }
+            monkey?.reducer = { n -> n % lcm }
+            monkeyList.add(monkey!!)
+        }
+        return monkeyId
+    }
+
+    private fun computeLcm(nums: List<Long>): Long {
+        val lcmMap = mutableMapOf<Long, Int>()
+        var found = false
+        var mcm = -1L
+        var counter = 1L
+        while (!found) {
+            for (i in nums) {
+                val m = i * counter
+                lcmMap.merge(m, 1) { o, _ -> o + 1 }
+                if (lcmMap[m] == nums.size) {
+                    mcm = m
+                    found = true
+                }
+            }
+            counter++
+        }
+        return mcm
     }
 
     private fun printStatus(roundNum: Long) {
@@ -135,26 +170,20 @@ class MonkeyGroup {
             println("Monkey ${monkey.id} inspected items ${monkey.visitor.getData()} times.")
         }
     }
-
-    private fun parseTester(line: String, monkeyTargetId: Int, monkey: Monkey?, divider: Long): Int {
-        val monkeyId = Regex("throw to monkey (\\d+)").find(line)?.groupValues?.get(1)?.toInt()!!
-        if (line.contains("If false")) {
-            monkey?.tester = { n -> if (n % divider == 0L) { monkeyTargetId} else { monkeyId } }
-            monkeyList.add(monkey!!)
-        }
-        return monkeyId
-    }
 }
 
 fun part1(input: List<String>): Long {
     val monkeyGroup = MonkeyGroup()
     monkeyGroup.parseSpec(input)
-    monkeyGroup.run(20, true)
+    monkeyGroup.run(20, worryFunction =  { n -> n.toFloat().div(3.0f).let { floor(it).toLong() } })
     return monkeyGroup.computeMonkeyBusiness()
 }
 
 fun part2(input: List<String>): Long {
-    return 0L
+    val monkeyGroup = MonkeyGroup()
+    monkeyGroup.parseSpec(input)
+    monkeyGroup.run(10000, debug = false, useReducer = true)
+    return monkeyGroup.computeMonkeyBusiness()
 }
 
 fun main() {
