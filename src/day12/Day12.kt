@@ -4,12 +4,27 @@ import readInput
 
 class Id(val x: Int, val y: Int)
 
-class Node(val id: Id, val height: Short, val terminal: Boolean = false) {
+class Node(private val id: Id, private val height: Short) {
+    companion object {
+        fun from(x: Int, y: Int, c: Char): Node {
+            val height: Short = when (c) {
+                'S' -> -1
+                'E' -> (('z' - 'a')+1).toShort()
+                else -> (c - 'a').toShort()
+            }
+            return Node(Id(x, y), height)
+        }
+    }
+    fun isReachable(node: Node): Boolean {
+        return node.height in height-1..height+1
+    }
+
     val adjacentNodes = mutableListOf<Node>()
 }
 
-fun readNodes(input: List<String>): Node {
-    var startingNode: Node? = null
+fun readNodes(input: List<String>): Pair<Node, Node> {
+    var startNode: Node? = null
+    var endNode: Node? = null
     var currentNode: Node? = null
     val nodes: MutableList<MutableList<Node>> = mutableListOf()
 
@@ -17,30 +32,32 @@ fun readNodes(input: List<String>): Node {
         val currentRow = mutableListOf<Node>()
         nodes.add(currentRow)
         line.toCharArray().forEachIndexed{ x, c ->
-            currentNode = Node(Id(x, y), (c - 'a').toShort(), (c == 'E'))
+            currentNode = Node.from(x, y, c)
             currentRow.add(currentNode!!)
             // Add adjacent look-ahead nodes (up, left)
-            if (y-1>=0) {
+            if ((y-1>=0) && currentNode!!.isReachable(nodes[y-1][x])) {
                 currentNode!!.adjacentNodes.add(nodes[y-1][x]) // Add upper node
                 nodes[y-1][x].adjacentNodes.add(currentNode!!) // Set current node as adjacent in upper node (down)
             }
-            if (x-1>=0) {
+            if ((x-1>=0) && currentNode!!.isReachable(nodes[y][x-1])) {
                 currentNode!!.adjacentNodes.add(nodes[y][x-1]) // Add left node
                 nodes[y][x-1].adjacentNodes.add(currentNode!!) // Set current node as adjacent in left node (right)
             }
 
             // Keep Starting node
             if (c == 'S') {
-                startingNode = currentNode
+                startNode = currentNode
+            } else if (c == 'E') {
+                endNode = currentNode
             }
         }
     }
 
-    return startingNode!!
+    return startNode!! to endNode!!
 }
 
 fun part1(input: List<String>): Long {
-    var startingNode = readNodes(input)
+    var (startingNode, endNode) = readNodes(input)
     return 0L
 }
 
