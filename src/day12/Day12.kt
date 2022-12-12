@@ -52,10 +52,11 @@ class Graph(private var nodes: NodeGrid) {
     fun findShortestPath(startNode: Node = this.startNode, endNode: Node = this.endNode): List<Node> {
         val shortestPath = mutableListOf<Node>()
         // Step 1: Assign infinity to all vertex except starting node
-        for (y in 1 until nodes.size) {
-            for (x in 1 until nodes[y].size) {
+        for (y in 0 until nodes.size) {
+            for (x in 0 until nodes[y].size) {
                 nodes[y][x].pathValue = -1
                 nodes[y][x].visited = false
+                nodes[y][x].sourceNode = null
             }
         }
         startNode.pathValue = 0
@@ -88,12 +89,28 @@ class Graph(private var nodes: NodeGrid) {
 
         // Step 3: Backtrack from end node to get the list of source nodes to start
         var pathNode: Node? = endNode
-        while ((pathNode != null) && (pathNode != startNode)) {
+        while ((pathNode != null) && (pathNode.visited) && (pathNode != startNode)) {
             shortestPath.add(pathNode)
             pathNode = pathNode.sourceNode
         }
 
         return shortestPath
+    }
+
+    fun findLowestNodes(): List<Node> {
+        val list = mutableListOf<Node>()
+        for (y in 0 until nodes.size) {
+            for (x in 0 until nodes[y].size) {
+                if (nodes[y][x].height == 0.toShort()) {
+                    list.add(nodes[y][x])
+                }
+            }
+        }
+        return list
+    }
+
+    fun getNode(x: Int, y: Int): Node {
+        return this.nodes[y][x]
     }
 }
 
@@ -145,7 +162,16 @@ fun part1(input: List<String>): Int {
 }
 
 fun part2(input: List<String>): Int {
-    return 0
+    val nodeGrid = readNodes(input)
+    val lowestNodes = nodeGrid.findLowestNodes()
+    var lowestSteps = -1
+    for (node in lowestNodes) {
+        val shortestPath = nodeGrid.findShortestPath(node).size
+        if ((shortestPath>0) && ((lowestSteps == -1) || (shortestPath<lowestSteps))) {
+            lowestSteps = shortestPath
+        }
+    }
+    return lowestSteps
 }
 
 fun main() {
