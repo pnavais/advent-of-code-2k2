@@ -19,9 +19,14 @@ fun readNodes(input: List<String>): Node {
         line.toCharArray().forEachIndexed{ x, c ->
             currentNode = Node(Id(x, y), (c - 'a').toShort(), (c == 'E'))
             currentRow.add(currentNode!!)
-            // Add adjacent nodes (up, down, left, right)
+            // Add adjacent look-ahead nodes (up, left)
             if (y-1>=0) {
-                currentNode!!.adjacentNodes.add(nodes[y-1][x])
+                currentNode!!.adjacentNodes.add(nodes[y-1][x]) // Add upper node
+                nodes[y-1][x].adjacentNodes.add(currentNode!!) // Set current node as adjacent in upper node (down)
+            }
+            if (x-1>=0) {
+                currentNode!!.adjacentNodes.add(nodes[y][x-1]) // Add left node
+                nodes[y][x-1].adjacentNodes.add(currentNode!!) // Set current node as adjacent in left node (right)
             }
 
             // Keep Starting node
