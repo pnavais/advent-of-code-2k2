@@ -11,7 +11,7 @@ class Node(val id: Id, val height: Short, val terminal: Boolean = false) {
 fun readNodes(input: List<String>): Node {
     var startingNode: Node? = null
     var currentNode: Node? = null
-    var nodes: MutableList<MutableList<Node>> = mutableListOf()
+    val nodes: MutableList<MutableList<Node>> = mutableListOf()
 
     for ((y, line) in input.withIndex()) {
         val currentRow = mutableListOf<Node>()
