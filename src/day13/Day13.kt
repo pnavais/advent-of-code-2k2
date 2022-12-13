@@ -31,15 +31,12 @@ class ListValue : Value {
 }
 
 fun readSpec(input: List<String>): List<ListValue> {
-
     val listsValue = mutableListOf<ListValue>()
-
     for (line in input) {
         if (line.isNotEmpty()) {
             listsValue.add(processList(line))
         }
     }
-
     return listsValue
 }
 
@@ -49,26 +46,30 @@ private fun processList(line: String): ListValue {
     val digitBuilder = StringBuilder()
     for (c in line.toCharArray()) {
         if (c == '[') {
-            currentList = if (currentList == null) ListValue()
-            listStack.push(currentList)
+            if (currentList!=null) {
+                listStack.push(currentList)
+            }
+            currentList = ListValue()
         } else if (c.isDigit()) {
             digitBuilder.append(c)
-        } else if (c == ',') {
-            currentList.add(IntValue.from(digitBuilder.toString()))
+        } else if ((c == ',') && (digitBuilder.isNotEmpty())) {
+            currentList?.add(IntValue.from(digitBuilder.toString()))
             digitBuilder.clear()
         } else if (c == ']') {
             if (digitBuilder.isNotEmpty()) {
-                currentList.add(IntValue.from(digitBuilder.toString()))
+                currentList?.add(IntValue.from(digitBuilder.toString()))
+                digitBuilder.clear()
             }
-            val parentList = listStack.pop()
-            if (parentList !== currentList) {
-                parentList.add(currentList)
+            if (listStack.isNotEmpty()) {
+                val parentList = listStack.pop()
+                if (parentList !== currentList) {
+                    parentList.add(currentList!!)
+                }
+                currentList = parentList
             }
-            currentList = parentList
-
         }
     }
-    return currentList
+    return currentList!!
 }
 
 fun part1(input: List<String>): Int {
