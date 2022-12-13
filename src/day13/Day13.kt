@@ -62,7 +62,7 @@ data class Packet(val list: ListValue)
 class PacketList {
     val packetPairs = mutableListOf<PacketPair>()
 
-    fun process(): Int {
+    fun processSum(): Int {
         var sum = 0
         for ((i, pair) in packetPairs.withIndex()) {
             val result = processPair(pair)
@@ -71,6 +71,45 @@ class PacketList {
             }
         }
         return sum
+    }
+
+    fun processDecoderKey(): Int {
+        var key = 1
+        val packetComparator = Comparator { firstPacket: Packet, secondPacket: Packet ->
+                    val res = processPair(firstPacket to secondPacket)
+                    if (res == null) {
+                        0
+                    } else if (res) {
+                        -1
+                    } else {
+                        1
+                    }
+        }
+        val packets = mutableListOf<Packet>()
+
+        packetPairs.forEach {
+            packets.add(it.first)
+            packets.add(it.second)
+        }
+
+        // Add divider packets
+        val startPacket = Packet(ListValue.from(IntValue(2)))
+        val endPacket = Packet(ListValue.from(IntValue(6)))
+        packets.add(startPacket)
+        packets.add(endPacket)
+
+        val sortedPackets = packets.sortedWith(packetComparator)
+
+        for ((i,sortedPacket) in sortedPackets.withIndex()) {
+            if (sortedPacket === startPacket) {
+                key*=(i+1)
+            } else if (sortedPacket === endPacket) {
+                key*=(i+1)
+                break
+            }
+        }
+
+        return key
     }
 
     private fun processPair(pair: PacketPair): Boolean? {
@@ -176,11 +215,12 @@ private fun processList(line: String): ListValue {
 
 fun part1(input: List<String>): Int {
     val packetList = readSpec(input)
-    return packetList.process()
+    return packetList.processSum()
 }
 
 fun part2(input: List<String>): Int {
-    return 1
+    val packetList = readSpec(input)
+    return packetList.processDecoderKey()
 }
 
 fun main() {
