@@ -24,11 +24,11 @@ open class Element(val type: Type, open var x: Int, open var y: Int) {
 
 data class SandElement(override var x: Int = 500, override var y: Int = 0) : Element(Type.SAND, x, y)
 data class RockElement(override var x: Int, override var y: Int) : Element(Type.ROCK, x, y)
-data class GridDef(val minX: Int, val minY: Int, val maxX: Int, val maxY: Int)
+data class GridDef(var minX: Int, var minY: Int, var maxX: Int, var maxY: Int)
 typealias ElementGrid = MutableList<MutableList<Element>>
 
-class RockPath(val rocks: List<RockElement>)
-class RockPaths(val paths: List<RockPath>)
+class RockPath(val rocks: MutableList<RockElement>)
+class RockPaths(val paths: MutableList<RockPath>)
 
 class RockGrid(private val gridDef: GridDef) {
 
@@ -45,13 +45,30 @@ class RockGrid(private val gridDef: GridDef) {
         }
     }
 
-    fun dropSand(): Int {
+    fun getGridDef(): GridDef {
+        return gridDef
+    }
+
+    fun getGrid(): ElementGrid {
+        return grid
+    }
+
+    fun dropSand(offset: Int = 0): Int {
         var outOfBounds = false
+        var entryBlocked = false
         var counter = 0
         while (!outOfBounds) {
             var keepFalling = true
             val currentSand = SandElement()
-            addElement(currentSand)
+            currentSand.x+=offset
+            // Check entry is blocked
+            if (grid[currentSand.y][currentSand.x - gridDef.minX].type == Type.SAND_STALLED) {
+                outOfBounds = true
+                entryBlocked = true
+                addElement(Element(Type.SAND_STALLED, currentSand.x, currentSand.y))
+            } else {
+                addElement(currentSand)
+            }
             while (keepFalling && !outOfBounds) {
                 // Check next drop position from down, down-left, down-right
                 with(tryMove(currentSand, Direction.DOWN)) {
@@ -71,11 +88,20 @@ class RockGrid(private val gridDef: GridDef) {
                     }
                 }
             }
-            val elementType = if (!outOfBounds) { Type.SAND_STALLED } else { Type.AIR }
-            if (elementType == Type.SAND_STALLED) {
-                counter++
+            if (!entryBlocked) {
+                val elementType = if (!outOfBounds) {
+                    Type.SAND_STALLED
+                } else {
+                    Type.AIR
+                }
+                if (elementType == Type.SAND_STALLED) {
+                    counter++
+                }
+                grid[currentSand.y][currentSand.x] = Element(elementType, currentSand.x, currentSand.y)
             }
-            grid[currentSand.y][currentSand.x] = Element(elementType, currentSand.x, currentSand.y)
+
+            // lower left / right ?
+
         }
         return counter
     }
@@ -153,9 +179,13 @@ class RockGrid(private val gridDef: GridDef) {
 
 fun readScan(input: List<String>): RockGrid {
     val scanData = readRockPaths(input)
-    val grid = RockGrid(scanData.second)
+    return generateGrid(scanData.first, scanData.second)
+}
 
-    for (rockPath in scanData.first.paths) {
+fun generateGrid(rockPaths: RockPaths, gridDef: GridDef): RockGrid {
+    val grid = RockGrid(gridDef)
+
+    for (rockPath in rockPaths.paths) {
         for (i in 0 until rockPath.rocks.size - 1) {
             val start = rockPath.rocks[i]
             val end = rockPath.rocks[i+1]
@@ -164,7 +194,6 @@ fun readScan(input: List<String>): RockGrid {
             addRockPath(start, end, grid, (start.x == end.x))
         }
     }
-
     return grid
 }
 
@@ -202,18 +231,35 @@ private fun readRockPaths(input: List<String>): Pair<RockPaths, GridDef> {
 
 fun part1(input: List<String>): Int {
     val grid = readScan(input)
-    val counter = grid.dropSand()
+    grid.dropSand()
     grid.debug()
     return grid.countElements(Type.SAND_STALLED)
 }
 
 fun part2(input: List<String>): Int {
-    return 0
+    val (rockPaths, gridDef) = readRockPaths(input)
+    val offset = 400
+    gridDef.maxX += (gridDef.maxX - 500) + (offset*2)
+    gridDef.maxY += 2
+    // Add offset to all rocks
+    for (rockPath in rockPaths.paths) {
+        for (rock in rockPath.rocks) {
+            rock.x+=offset
+        }
+    }
+    // Add floor rock path
+    val floorPath = RockPath(mutableListOf(RockElement(0, gridDef.maxY), RockElement(gridDef.maxX, gridDef.maxY)))
+    rockPaths.paths.add(floorPath)
+
+    val grid = generateGrid(rockPaths, gridDef)
+    grid.dropSand(offset)
+    grid.debug()
+    return grid.countElements(Type.SAND_STALLED)
 }
 
 fun main() {
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day14/Day14_test")
-    println(part1(testInput))
+    //println(part1(testInput))
     println(part2(testInput))
 }
